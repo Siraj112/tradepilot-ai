@@ -13,6 +13,17 @@ type CryptoResponse = {
   markets: CryptoMarket[];
 };
 
+type ForexGoldMarket = {
+  symbol: string;
+  price_usd: number;
+  status: string;
+};
+
+type ForexGoldResponse = {
+  data_connected: boolean;
+  markets: ForexGoldMarket[];
+};
+
 const agents = [
   ["01", "Desk Lead", "Coordinates the AI team"],
   ["02", "Market Analyst", "Studies price and volume"],
@@ -25,6 +36,7 @@ const agents = [
 
 export default function Home() {
   const [crypto, setCrypto] = useState<CryptoResponse | null>(null);
+  const [forexGold, setForexGold] = useState<ForexGoldResponse | null>(null);
   const [error, setError] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
 
@@ -33,12 +45,8 @@ export default function Home() {
 
     async function loadPrices() {
       try {
-        const response = await fetch("/api/crypto", {
-          cache: "no-store",
-        });
-
-        if (!response.ok) throw new Error("Price request failed");
-
+        const response = await fetch("/api/crypto", { cache: "no-store" });
+        if (!response.ok) throw new Error("Crypto request failed");
         const data: CryptoResponse = await response.json();
 
         if (active) {
@@ -51,8 +59,24 @@ export default function Home() {
       }
     }
 
+    async function loadForexGold() {
+      try {
+        const response = await fetch("/api/forex-gold", { cache: "no-store" });
+        if (!response.ok) throw new Error("Forex/Gold request failed");
+        const data: ForexGoldResponse = await response.json();
+        if (active) setForexGold(data);
+      } catch {
+        if (active) setForexGold(null);
+      }
+    }
+
     loadPrices();
-    const timer = setInterval(loadPrices, 15000);
+    loadForexGold();
+
+    const timer = setInterval(() => {
+      loadPrices();
+      loadForexGold();
+    }, 15000);
 
     return () => {
       active = false;
@@ -75,6 +99,22 @@ export default function Home() {
     });
   };
 
+
+  const getForexGoldPrice = (symbol: string) => {
+    const market = forexGold?.markets?.find((item) => item.symbol === symbol);
+    if (!market || market.status !== "available") return "Awaiting data";
+
+    return market.price_usd.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 5,
+    });
+  };
+
+  const isForexGoldOnline = (symbol: string) =>
+    forexGold?.markets?.some(
+      (item) => item.symbol === symbol && item.status === "available"
+    ) ?? false;
+
   const connected = crypto?.data_connected === true;
 
   const markets = [
@@ -95,16 +135,23 @@ export default function Home() {
     {
       name: "Forex",
       symbol: "EUR / USD",
-      price: "Awaiting data",
+      price: getForexGoldPrice("EURUSD"),
       icon: "€",
-      online: false,
+      online: isForexGoldOnline("EURUSD"),
+    },
+    {
+      name: "Forex",
+      symbol: "GBP / USD",
+      price: getForexGoldPrice("GBPUSD"),
+      icon: "£",
+      online: isForexGoldOnline("GBPUSD"),
     },
     {
       name: "Gold",
       symbol: "XAU / USD",
-      price: "Awaiting data",
+      price: getForexGoldPrice("XAUUSD"),
       icon: "Au",
-      online: false,
+      online: isForexGoldOnline("XAUUSD"),
     },
   ];
 
