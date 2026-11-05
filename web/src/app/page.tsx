@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 type CryptoMarket = {
   symbol: string;
   price_usd: number;
+  server_received_at: string;
+  timestamp_type: string;
 };
 
 type CryptoResponse = {
@@ -16,6 +18,13 @@ type CryptoResponse = {
 type ForexGoldMarket = {
   symbol: string;
   price_usd: number;
+  bid: number;
+  ask: number;
+  spread: number;
+  source: string;
+  timestamp: string;
+  quote_age_seconds: number;
+  stale: boolean;
   status: string;
 };
 
@@ -230,7 +239,7 @@ export default function Home() {
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {markets.map((market) => (
               <div
-                key={market.name}
+                key={market.symbol}
                 className="rounded-2xl border border-white/10 bg-[#111a2b] p-5"
               >
                 <div className="flex items-center justify-between">
@@ -245,8 +254,19 @@ export default function Home() {
                 <p className="mt-1 text-xs text-slate-400">{market.symbol}</p>
                 <p className="mt-4 text-xl font-bold">{market.price}</p>
                 <p className="mt-1 text-xs text-slate-500">
-                  {market.online ? "Hyperliquid mid-price · USD" : "Awaiting data connection"}
+{market.online ? (market.symbol === "BTC / USD" || market.symbol === "ETH / USD" ? "Hyperliquid mid-price USD" : "Biquote broker quote") : "Awaiting data connection"}
                 </p>
+{!market.symbol.includes("BTC") && !market.symbol.includes("ETH") && (() => {
+  const symbol = market.symbol === "EUR / USD" ? "EURUSD" : market.symbol === "GBP / USD" ? "GBPUSD" : "XAUUSD";
+  const quote = forexGold?.markets?.find((item) => item.symbol === symbol && item.status === "available");
+  return quote ? (
+    <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
+      <div><p className="text-[10px] text-slate-500">BID</p><p className="mt-1 text-xs font-semibold">{quote.bid}</p></div>
+      <div><p className="text-[10px] text-slate-500">ASK</p><p className="mt-1 text-xs font-semibold">{quote.ask}</p></div>
+      <div><p className="text-[10px] text-slate-500">SPREAD</p><p className="mt-1 text-xs font-semibold">{quote.spread}</p></div>
+    </div>
+  ) : null;
+})()}
               </div>
             ))}
           </div>

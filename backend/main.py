@@ -1,4 +1,6 @@
+import math
 import json
+from datetime import datetime, timezone
 from urllib.request import Request, urlopen
 from fastapi import FastAPI, HTTPException
 
@@ -43,25 +45,27 @@ def crypto_prices():
         headers={"Content-Type": "application/json"},
         method="POST"
     )
-
     try:
         with urlopen(request, timeout=15) as response:
             data = json.loads(response.read())
-
         prices = []
+        received_at = datetime.now(timezone.utc).isoformat()
         for symbol in ["BTC", "ETH"]:
             if symbol in data:
-                prices.append({
-                    "symbol": symbol,
-                    "price_usd": float(data[symbol])
-                })
-
+                price = float(data[symbol])
+                if price > 0:
+                    prices.append({
+                        "symbol": symbol,
+                        "price_usd": price,
+                        "server_received_at": received_at,
+                        "timestamp_type": "server_received_at"
+                    })
         return {
             "provider": "Hyperliquid public API",
-            "data_connected": True,
+            "data_connected": len(prices) == 2,
+            "freshness_note": "Server receive time; exchange quote timestamp not provided",
             "markets": prices
         }
-
     except Exception:
         raise HTTPException(
             status_code=502,
@@ -106,6 +110,9 @@ def forex_gold_prices():
                 })
                 continue
 
+            if not all(math.isfinite(value) for value in [mid, bid, ask, age]) or mid <= 0 or bid <= 0 or ask < bid or age < 0:
+                markets.append({"symbol": symbol, "status": "invalid_data"})
+                continue
             stale = bool(quote.get("stale", True))
             fresh = not stale and age <= 60
 
