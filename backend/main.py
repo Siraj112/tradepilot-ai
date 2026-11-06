@@ -73,6 +73,42 @@ def crypto_prices():
         )
 
 
+@app.get("/markets/binance")
+def binance_prices():
+    results = []
+    for symbol in ["BTCUSDT", "ETHUSDT"]:
+        url = f"https://data-api.binance.vision/api/v3/ticker/bookTicker?symbol={symbol}"
+        try:
+            request = Request(url, headers={"Accept": "application/json"})
+            with urlopen(request, timeout=10) as response:
+                quote = json.loads(response.read())
+            bid = float(quote["bidPrice"])
+            ask = float(quote["askPrice"])
+            if not all(math.isfinite(x) and x > 0 for x in [bid, ask]) or ask < bid:
+                raise ValueError("Invalid quote")
+            results.append({
+                "symbol": symbol.replace("USDT", ""),
+                "market_type": "Binance Spot",
+                "bid": bid,
+                "ask": ask,
+                "mid_price": (bid + ask) / 2,
+                "spread": ask - bid,
+                "server_received_at": datetime.now(timezone.utc).isoformat(),
+                "status": "available"
+            })
+        except Exception:
+            results.append({
+                "symbol": symbol.replace("USDT", ""),
+                "market_type": "Binance Spot",
+                "status": "unavailable"
+            })
+    return {
+        "provider": "Binance public Spot API",
+        "data_connected": all(item["status"] == "available" for item in results),
+        "markets": results
+    }
+
+
 @app.get("/markets/forex-gold")
 def forex_gold_prices():
     url = (

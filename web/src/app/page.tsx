@@ -126,6 +126,24 @@ export default function Home() {
 
   const connected = crypto?.data_connected === true;
 
+  const getCryptoStatus = (symbol: string) => {
+    const market = crypto?.markets?.find((item) => item.symbol === symbol);
+    if (!market) return "OFFLINE";
+    const ageSeconds = (Date.now() - Date.parse(market.server_received_at)) / 1000;
+    if (!Number.isFinite(ageSeconds) || ageSeconds < 0) return "OFFLINE";
+    if (error || !connected || ageSeconds > 45) return "STALE";
+    return "FRESH";
+  };
+
+  const getForexGoldStatus = (symbol: string) => {
+    if (!forexGold) return "OFFLINE";
+    const market = forexGold.markets?.find((item) => item.symbol === symbol);
+    if (!market) return "OFFLINE";
+    if (market.status === "stale" || market.stale || market.quote_age_seconds > 60) return "STALE";
+    if (market.status !== "available") return "OFFLINE";
+    return "FRESH";
+  };
+
   const markets = [
     {
       name: "Bitcoin",
@@ -133,6 +151,7 @@ export default function Home() {
       price: getPrice("BTC"),
       icon: "₿",
       online: connected && !!crypto?.markets?.some((m) => m.symbol === "BTC"),
+    status: getCryptoStatus("BTC"),
     },
     {
       name: "Ethereum",
@@ -140,6 +159,7 @@ export default function Home() {
       price: getPrice("ETH"),
       icon: "Ξ",
       online: connected && !!crypto?.markets?.some((m) => m.symbol === "ETH"),
+    status: getCryptoStatus("ETH"),
     },
     {
       name: "Forex",
@@ -147,6 +167,7 @@ export default function Home() {
       price: getForexGoldPrice("EURUSD"),
       icon: "€",
       online: isForexGoldOnline("EURUSD"),
+    status: getForexGoldStatus("EURUSD"),
     },
     {
       name: "Forex",
@@ -154,6 +175,7 @@ export default function Home() {
       price: getForexGoldPrice("GBPUSD"),
       icon: "£",
       online: isForexGoldOnline("GBPUSD"),
+    status: getForexGoldStatus("GBPUSD"),
     },
     {
       name: "Gold",
@@ -161,6 +183,7 @@ export default function Home() {
       price: getForexGoldPrice("XAUUSD"),
       icon: "Au",
       online: isForexGoldOnline("XAUUSD"),
+    status: getForexGoldStatus("XAUUSD"),
     },
   ];
 
@@ -246,8 +269,8 @@ export default function Home() {
                   <span className="text-2xl font-bold text-cyan-400">
                     {market.icon}
                   </span>
-                  <span className={`text-[10px] font-semibold ${market.online ? "text-emerald-400" : "text-slate-500"}`}>
-                    {market.online ? "● CONNECTED" : "● FEED OFFLINE"}
+<span className={`text-[10px] font-semibold ${market.status === "FRESH" ? "text-emerald-400" : market.status === "STALE" ? "text-amber-400" : "text-slate-500"}`}>
+{market.status}
                   </span>
                 </div>
                 <h3 className="mt-5 font-semibold">{market.name}</h3>
