@@ -109,6 +109,94 @@ def binance_prices():
     }
 
 
+
+@app.get("/markets/compare")
+def compare_crypto_prices():
+    try:
+        hyper = crypto_prices()
+    except HTTPException:
+        hyper = {"markets": []}
+
+    try:
+        binance = binance_prices()
+    except HTTPException:
+        binance = {"markets": []}
+
+    hyper_map = {
+        item["symbol"]: item
+        for item in hyper.get("markets", [])
+        if isinstance(item, dict) and "symbol" in item
+    }
+    binance_map = {
+        item["symbol"]: item
+        for item in binance.get("markets", [])
+        if isinstance(item, dict) and "symbol" in item
+    }
+
+    comparisons = []
+
+    for symbol in ["BTC", "ETH"]:
+        h = hyper_map.get(symbol)
+        b = binance_map.get(symbol)
+
+        if not h or not b or b.get("status") != "available":
+            comparisons.append({
+                "symbol": symbol,
+                "status": "source_unavailable"
+            })
+            continue
+
+        try:
+            h_price = float(h["price_usd"])
+            b_price = float(b["mid_price"])
+
+            if not all(math.isfinite(x) and x > 0 for x in [h_price, b_price]):
+                raise ValueError("Invalid price")
+
+            difference = abs(h_price - b_price)
+            difference_percent = (difference / b_price) * 100
+
+            h_time = datetime.fromisoformat(
+                h["server_received_at"].replace("Z", "+00:00")
+            )
+            b_time = datetime.fromisoformat(
+                b["server_received_at"].replace("Z", "+00:00")
+            )
+            timestamp_gap = abs((h_time - b_time).total_seconds())
+
+            comparisons.append({
+                "symbol": symbol,
+                "status": "comparison_available",
+                "hyperliquid": {
+                    "provider": "Hyperliquid",
+                    "market_type": "Perpetual reference",
+                    "price": h_price,
+                    "server_received_at": h["server_received_at"]
+                },
+                "binance": {
+                    "provider": "Binance",
+                    "market_type": "Spot",
+                    "mid_price": b_price,
+                    "bid": b["bid"],
+                    "ask": b["ask"],
+                    "server_received_at": b["server_received_at"]
+                },
+                "absolute_difference": difference,
+                "difference_percent": difference_percent,
+                "timestamp_gap_seconds": timestamp_gap,
+                "note": "Spot and perpetual prices may differ; this is a reference comparison, not an executable-price guarantee."
+            })
+        except (KeyError, TypeError, ValueError, OverflowError):
+            comparisons.append({
+                "symbol": symbol,
+                "status": "invalid_data"
+            })
+
+    return {
+        "status": "comparison_ready",
+        "markets": comparisons
+    }
+
 @app.get("/markets/forex-gold")
 def forex_gold_prices():
     url = (

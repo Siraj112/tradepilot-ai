@@ -33,6 +33,34 @@ type ForexGoldResponse = {
   markets: ForexGoldMarket[];
 };
 
+type ComparisonMarket = {
+  symbol: string;
+  status: string;
+  hyperliquid?: {
+    provider: string;
+    market_type: string;
+    price: number;
+    server_received_at: string;
+  };
+  binance?: {
+    provider: string;
+    market_type: string;
+    mid_price: number;
+    bid: number;
+    ask: number;
+    server_received_at: string;
+  };
+  absolute_difference?: number;
+  difference_percent?: number;
+  timestamp_gap_seconds?: number;
+  note?: string;
+};
+
+type ComparisonResponse = {
+  status: string;
+  markets: ComparisonMarket[];
+};
+
 const agents = [
   ["01", "Desk Lead", "Coordinates the AI team"],
   ["02", "Market Analyst", "Studies price and volume"],
@@ -46,6 +74,7 @@ const agents = [
 export default function Home() {
   const [crypto, setCrypto] = useState<CryptoResponse | null>(null);
   const [forexGold, setForexGold] = useState<ForexGoldResponse | null>(null);
+const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
   const [error, setError] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
 
@@ -79,12 +108,27 @@ export default function Home() {
       }
     }
 
+    async function loadComparison() {
+      try {
+        const response = await fetch("/api/compare", { cache: "no-store" });
+        if (!response.ok) throw new Error("Comparison request failed");
+
+        const data: ComparisonResponse = await response.json();
+
+        if (active) setComparison(data);
+      } catch {
+        if (active) setComparison(null);
+      }
+    }
+
     loadPrices();
     loadForexGold();
+    loadComparison();
 
     const timer = setInterval(() => {
       loadPrices();
       loadForexGold();
+    loadComparison();
     }, 15000);
 
     return () => {
