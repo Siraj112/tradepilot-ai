@@ -344,7 +344,71 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
           </p>
         </section>
 
-        <section className="mt-9">
+
+<section className="mt-9">
+  <h2 className="text-xl font-bold">Market Data Intelligence</h2>
+  <p className="mt-1 text-sm text-slate-400">
+    Binance Spot vs Hyperliquid Perpetual reference
+  </p>
+
+  {comparison?.markets?.length ? (
+    <div className="mt-4 grid gap-3 lg:grid-cols-2">
+      {comparison.markets.map((market) => (
+        <div key={market.symbol} className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold">{market.symbol}</h3>
+            <span className="rounded-full border border-emerald-500/30 px-2 py-1 text-xs text-emerald-400">
+              {market.status === "comparison_available" ? "COMPARISON READY" : market.status}
+            </span>
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs text-slate-500">HYPERLIQUID PERPETUAL</p>
+              <p className="mt-1 text-lg font-semibold">
+                {market.hyperliquid ? `$${market.hyperliquid.price.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "Unavailable"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">BINANCE SPOT MID</p>
+              <p className="mt-1 text-lg font-semibold">
+                {market.binance ? `$${market.binance.mid_price.toLocaleString("en-US", { maximumFractionDigits: 2 })}` : "Unavailable"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">PRICE DIFFERENCE</p>
+              <p className="mt-1 text-sm font-semibold">
+                {typeof market.absolute_difference === "number" ? `$${market.absolute_difference.toFixed(2)}` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-500">DIFFERENCE PERCENT</p>
+              <p className="mt-1 text-sm font-semibold">
+                {typeof market.difference_percent === "number" ? `${market.difference_percent.toFixed(4)}%` : "—"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-3 border-t border-white/10 pt-3">
+            <p className="text-xs text-slate-400">
+              Timestamp gap: {typeof market.timestamp_gap_seconds === "number" ? `${market.timestamp_gap_seconds.toFixed(2)} seconds` : "Unavailable"}
+            </p>
+            {market.note ? (
+              <p className="mt-2 text-xs leading-5 text-slate-500">{market.note}</p>
+            ) : null}
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="mt-4 rounded-xl border border-white/10 p-4 text-sm text-slate-400">
+      {comparison ? "Comparison data unavailable. Waiting for valid provider data." : "Waiting for comparison data..."}
+    </div>
+  )}
+</section>
+
+
+<section className="mt-9">
           <h2 className="text-xl font-bold">Your AI trading team</h2>
           <p className="mt-1 text-sm text-slate-400">
             Seven specialist roles · One controlled workflow
