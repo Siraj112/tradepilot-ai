@@ -53,7 +53,7 @@ def crypto_prices():
         for symbol in ["BTC", "ETH"]:
             if symbol in data:
                 price = float(data[symbol])
-                if price > 0:
+                if math.isfinite(price) and price > 0:
                     prices.append({
                         "symbol": symbol,
                         "price_usd": price,
