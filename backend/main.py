@@ -238,7 +238,10 @@ def forex_gold_prices():
                 markets.append({"symbol": symbol, "status": "invalid_data"})
                 continue
             stale = bool(quote.get("stale", True))
-            fresh = not stale and age <= 60
+            market_state = str(quote.get("marketState") or "").strip().lower()
+            market_closed = market_state in {"closed", "market_closed", "market closed"}
+            fresh = not market_closed and not stale and age <= 60
+            status = "market_closed" if market_closed else ("available" if fresh else "stale")
 
             markets.append({
                 "symbol": symbol,
@@ -253,7 +256,7 @@ def forex_gold_prices():
                 "timestamp": quote.get("timestamp"),
                 "quote_age_seconds": age,
                 "stale": stale,
-                "status": "available" if fresh else "stale"
+            "status": status
             })
 
         return {

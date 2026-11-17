@@ -25,6 +25,7 @@ type ForexGoldMarket = {
   timestamp: string;
   quote_age_seconds: number;
   stale: boolean;
+  market_state?: string | null;
   status: string;
 };
 
@@ -155,7 +156,7 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
 
   const getForexGoldPrice = (symbol: string) => {
     const market = forexGold?.markets?.find((item) => item.symbol === symbol);
-    if (!market || market.status !== "available") return "Awaiting data";
+    if (!market || !["available", "market_closed"].includes(market.status)) return "Awaiting data";
 
     return market.price_usd.toLocaleString("en-US", {
       minimumFractionDigits: 2,
@@ -165,7 +166,7 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
 
   const isForexGoldOnline = (symbol: string) =>
     forexGold?.markets?.some(
-      (item) => item.symbol === symbol && item.status === "available"
+      (item) => item.symbol === symbol && ["available", "market_closed"].includes(item.status)
     ) ?? false;
 
   const connected = crypto?.data_connected === true;
@@ -183,6 +184,7 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
     if (!forexGold) return "OFFLINE";
     const market = forexGold.markets?.find((item) => item.symbol === symbol);
     if (!market) return "OFFLINE";
+    if (market.status === "market_closed" || market.market_state?.toLowerCase() === "closed") return "MARKET CLOSED";
     if (market.status === "stale" || market.stale || market.quote_age_seconds > 60) return "STALE";
     if (market.status !== "available") return "OFFLINE";
     return "FRESH";
@@ -313,7 +315,7 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
                   <span className="text-2xl font-bold text-cyan-400">
                     {market.icon}
                   </span>
-<span className={`text-[10px] font-semibold ${market.status === "FRESH" ? "text-emerald-400" : market.status === "STALE" ? "text-amber-400" : "text-slate-500"}`}>
+<span className={`text-[10px] font-semibold ${market.status === "FRESH" ? "text-emerald-400" : (market.status === "STALE" || market.status === "MARKET CLOSED") ? "text-amber-400" : "text-slate-500"}`}>
 {market.status}
                   </span>
                 </div>
@@ -325,7 +327,7 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
                 </p>
 {!market.symbol.includes("BTC") && !market.symbol.includes("ETH") && (() => {
   const symbol = market.symbol === "EUR / USD" ? "EURUSD" : market.symbol === "GBP / USD" ? "GBPUSD" : "XAUUSD";
-  const quote = forexGold?.markets?.find((item) => item.symbol === symbol && item.status === "available");
+  const quote = forexGold?.markets?.find((item) => item.symbol === symbol && ["available", "market_closed"].includes(item.status));
   return quote ? (
     <div className="mt-4 grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
       <div><p className="text-[10px] text-slate-500">BID</p><p className="mt-1 text-xs font-semibold">{quote.bid}</p></div>
