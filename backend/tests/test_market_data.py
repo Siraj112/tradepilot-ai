@@ -334,6 +334,21 @@ class ComparisonTests(unittest.TestCase):
             all(item["status"] == "comparison_available" for item in result["markets"])
         )
 
+    def test_server_receive_gap_is_calculated_correctly(self):
+        hyper, binance = self.provider_data()
+
+        for item in binance["markets"]:
+            item["server_received_at"] = "2026-11-17T12:00:03+00:00"
+
+        with patch("main.crypto_prices", return_value=hyper), patch(
+            "main.binance_prices", return_value=binance
+        ):
+            result = main.compare_crypto_prices()
+
+        for item in result["markets"]:
+            self.assertEqual(item["server_receive_gap_seconds"], 3.0)
+            self.assertEqual(item["timestamp_gap_seconds"], 3.0)
+
     def test_one_symbol_unavailable(self):
         hyper, binance = self.provider_data()
         binance["markets"] = binance["markets"][:1]

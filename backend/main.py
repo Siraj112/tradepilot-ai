@@ -183,7 +183,8 @@ def compare_crypto_prices():
                 },
                 "absolute_difference": difference,
                 "difference_percent": difference_percent,
-                "timestamp_gap_seconds": timestamp_gap,
+                "server_receive_gap_seconds": timestamp_gap,
+                    "timestamp_gap_seconds": timestamp_gap,
                 "note": "Spot and perpetual prices may differ; this is a reference comparison, not an executable-price guarantee."
             })
         except (KeyError, TypeError, ValueError, OverflowError):

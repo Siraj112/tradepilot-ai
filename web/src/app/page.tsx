@@ -53,7 +53,7 @@ type ComparisonMarket = {
   };
   absolute_difference?: number;
   difference_percent?: number;
-  timestamp_gap_seconds?: number;
+  server_receive_gap_seconds?: number;
   note?: string;
 };
 
@@ -393,7 +393,7 @@ const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
 
           <div className="mt-3 border-t border-white/10 pt-3">
             <p className="text-xs text-slate-400">
-              Timestamp gap: {typeof market.timestamp_gap_seconds === "number" ? `${market.timestamp_gap_seconds.toFixed(2)} seconds` : "Unavailable"}
+              Server receive-time gap: {typeof market.server_receive_gap_seconds === "number" ? `${market.server_receive_gap_seconds.toFixed(2)} seconds` : "Unavailable"}
             </p>
             {market.note ? (
               <p className="mt-2 text-xs leading-5 text-slate-500">{market.note}</p>
