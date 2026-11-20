@@ -50,6 +50,8 @@ def crypto_prices():
             raw_data = response.read()
             received_at = datetime.now(timezone.utc).isoformat()
             data = json.loads(raw_data)
+        if not isinstance(data, dict):
+            raise ValueError("Unexpected Hyperliquid response structure")
         prices = []
         for symbol in ["BTC", "ETH"]:
             if symbol in data:

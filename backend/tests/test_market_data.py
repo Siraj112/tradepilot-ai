@@ -57,6 +57,14 @@ class HyperliquidTests(unittest.TestCase):
 
 
 
+    def test_unexpected_json_structure_returns_502(self):
+        with patch("main.urlopen", return_value=self.mock_response([])):
+            with self.assertRaises(main.HTTPException) as error:
+                main.crypto_prices()
+
+        self.assertEqual(error.exception.status_code, 502)
+
+
 class BinanceTests(unittest.TestCase):
 
     def mock_response(self, payload):
