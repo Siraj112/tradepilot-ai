@@ -47,9 +47,10 @@ def crypto_prices():
     )
     try:
         with urlopen(request, timeout=15) as response:
-            data = json.loads(response.read())
+            raw_data = response.read()
+            received_at = datetime.now(timezone.utc).isoformat()
+            data = json.loads(raw_data)
         prices = []
-        received_at = datetime.now(timezone.utc).isoformat()
         for symbol in ["BTC", "ETH"]:
             if symbol in data:
                 price = float(data[symbol])
@@ -81,7 +82,9 @@ def binance_prices():
         try:
             request = Request(url, headers={"Accept": "application/json"})
             with urlopen(request, timeout=10) as response:
-                quote = json.loads(response.read())
+                raw_quote = response.read()
+                received_at = datetime.now(timezone.utc).isoformat()
+                quote = json.loads(raw_quote)
             bid = float(quote["bidPrice"])
             ask = float(quote["askPrice"])
             if not all(math.isfinite(x) and x > 0 for x in [bid, ask]) or ask < bid:
@@ -93,7 +96,7 @@ def binance_prices():
                 "ask": ask,
                 "mid_price": (bid + ask) / 2,
                 "spread": ask - bid,
-                "server_received_at": datetime.now(timezone.utc).isoformat(),
+                "server_received_at": received_at,
                 "status": "available"
             })
         except Exception:
