@@ -55,7 +55,10 @@ def crypto_prices():
         prices = []
         for symbol in ["BTC", "ETH"]:
             if symbol in data:
-                price = float(data[symbol])
+                try:
+                    price = float(data[symbol])
+                except (TypeError, ValueError):
+                    continue
                 if math.isfinite(price) and price > 0:
                     prices.append({
                         "symbol": symbol,
