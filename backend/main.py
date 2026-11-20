@@ -231,6 +231,7 @@ def forex_gold_prices():
                 bid = float(quote["bid"])
                 ask = float(quote["ask"])
                 age = float(quote["quoteAgeSeconds"])
+                spread = float(quote.get("spread", ask - bid))
             except (KeyError, TypeError, ValueError):
                 markets.append({
                     "symbol": symbol,
@@ -238,7 +239,7 @@ def forex_gold_prices():
                 })
                 continue
 
-            if not all(math.isfinite(value) for value in [mid, bid, ask, age]) or mid <= 0 or bid <= 0 or ask < bid or age < 0:
+            if not all(math.isfinite(value) for value in [mid, bid, ask, age, spread]) or mid <= 0 or bid <= 0 or ask < bid or age < 0 or spread < 0:
                 markets.append({"symbol": symbol, "status": "invalid_data"})
                 continue
             stale = bool(quote.get("stale", True))
@@ -252,7 +253,7 @@ def forex_gold_prices():
                 "price_usd": mid,
                 "bid": bid,
                 "ask": ask,
-                "spread": float(quote.get("spread", ask - bid)),
+                "spread": spread,
                 "direction": quote.get("direction"),
                 "day_change_percent": quote.get("dayDiffPercent"),
                 "market_state": quote.get("marketState"),
@@ -265,10 +266,7 @@ def forex_gold_prices():
 
         return {
             "provider": "Biquote",
-            "data_connected": all(
-                market["status"] == "available"
-                for market in markets
-            ),
+            "data_connected": True,
             "markets": markets
         }
 

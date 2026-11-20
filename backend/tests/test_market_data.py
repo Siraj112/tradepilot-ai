@@ -210,6 +210,7 @@ class ForexGoldTests(unittest.TestCase):
             result = main.forex_gold_prices()
 
         self.assertTrue(all(item["status"] == "market_closed" for item in result["markets"]))
+        self.assertTrue(result["data_connected"])
 
     def test_stale_quote_status(self):
         quote = self.valid_quote()
@@ -223,6 +224,23 @@ class ForexGoldTests(unittest.TestCase):
             result = main.forex_gold_prices()
 
         self.assertTrue(all(item["status"] == "stale" for item in result["markets"]))
+        self.assertTrue(result["data_connected"])
+
+    def test_malformed_spread_marks_only_affected_quote_invalid(self):
+        payload = {
+            symbol: self.valid_quote()
+            for symbol in ["EURUSD", "GBPUSD", "XAUUSD"]
+        }
+        payload["EURUSD"]["spread"] = "abc"
+
+        with patch("main.urlopen", return_value=self.mock_response(payload)):
+            result = main.forex_gold_prices()
+
+        self.assertTrue(result["data_connected"])
+        self.assertEqual(result["markets"][0]["status"], "invalid_data")
+        self.assertTrue(
+            all(item["status"] == "available" for item in result["markets"][1:])
+        )
 
     def test_quote_age_59_60_61_second_boundaries(self):
         for age, expected in [
