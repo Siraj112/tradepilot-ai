@@ -126,6 +126,35 @@ class BinanceTests(unittest.TestCase):
         self.assertEqual(result["markets"][0]["status"], "unavailable")
 
 
+    def test_malformed_json_marks_only_affected_symbol_unavailable(self):
+        btc_response = MagicMock()
+        btc_response.__enter__.return_value.read.return_value = b"{invalid json"
+        eth = {"bidPrice": "3000", "askPrice": "3001"}
+
+        with patch("main.urlopen", side_effect=[
+            btc_response,
+            self.mock_response(eth),
+        ]):
+            result = main.binance_prices()
+
+        self.assertFalse(result["data_connected"])
+        self.assertEqual(result["markets"][0]["status"], "unavailable")
+        self.assertEqual(result["markets"][1]["status"], "available")
+
+    def test_unexpected_json_structure_marks_only_affected_symbol_unavailable(self):
+        eth = {"bidPrice": "3000", "askPrice": "3001"}
+
+        with patch("main.urlopen", side_effect=[
+            self.mock_response([]),
+            self.mock_response(eth),
+        ]):
+            result = main.binance_prices()
+
+        self.assertFalse(result["data_connected"])
+        self.assertEqual(result["markets"][0]["status"], "unavailable")
+        self.assertEqual(result["markets"][1]["status"], "available")
+
+
 class ForexGoldTests(unittest.TestCase):
 
     def mock_response(self, payload):
