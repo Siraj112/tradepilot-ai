@@ -310,6 +310,24 @@ class ForexGoldTests(unittest.TestCase):
         self.assertEqual(error.exception.status_code, 502)
 
 
+    def test_malformed_json_returns_502(self):
+        response = MagicMock()
+        response.__enter__.return_value.read.return_value = b"{invalid json"
+
+        with patch("main.urlopen", return_value=response):
+            with self.assertRaises(main.HTTPException) as context:
+                main.forex_gold_prices()
+
+        self.assertEqual(context.exception.status_code, 502)
+
+    def test_unexpected_top_level_json_structure_returns_502(self):
+        with patch("main.urlopen", return_value=self.mock_response([])):
+            with self.assertRaises(main.HTTPException) as context:
+                main.forex_gold_prices()
+
+        self.assertEqual(context.exception.status_code, 502)
+
+
 class ComparisonTests(unittest.TestCase):
 
     def provider_data(self, hyper_price=90000, binance_price=90010):
