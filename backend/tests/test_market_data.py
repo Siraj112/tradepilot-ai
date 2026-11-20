@@ -77,6 +77,20 @@ class HyperliquidTests(unittest.TestCase):
         self.assertEqual(result["markets"][0]["price_usd"], 3000.0)
 
 
+    def test_malformed_price_types_preserve_other_valid_symbol(self):
+        for invalid_price in (None, [], {}):
+            with self.subTest(invalid_price=invalid_price):
+                payload = {"BTC": invalid_price, "ETH": "3000"}
+
+                with patch("main.urlopen", return_value=self.mock_response(payload)):
+                    result = main.crypto_prices()
+
+                self.assertFalse(result["data_connected"])
+                self.assertEqual(len(result["markets"]), 1)
+                self.assertEqual(result["markets"][0]["symbol"], "ETH")
+                self.assertEqual(result["markets"][0]["price_usd"], 3000.0)
+
+
 class BinanceTests(unittest.TestCase):
 
     def mock_response(self, payload):
